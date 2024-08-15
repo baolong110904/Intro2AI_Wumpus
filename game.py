@@ -47,7 +47,7 @@ def run_game():
                         else:
                             agent_dir = FACING_TO_UP
                     elif event.key == pygame.K_DOWN:
-                        if agent_dir == FACING_TO_DOWN and agent_pos[1] + grid_size < HEIGHT:
+                        if agent_dir == FACING_TO_DOWN and agent_pos[1] + grid_size < num_rows * grid_size:
                             agent_pos[1] += grid_size
                             score -= 10
                         else:
@@ -59,7 +59,7 @@ def run_game():
                         else:
                             agent_dir = FACING_TO_LEFT
                     elif event.key == pygame.K_RIGHT:
-                        if agent_dir == FACING_TO_RIGHT and agent_pos[0] + grid_size < WIDTH - 200:
+                        if agent_dir == FACING_TO_RIGHT and agent_pos[0] + grid_size < num_cols * grid_size:
                             agent_pos[0] += grid_size
                             score -= 10
                         else:
@@ -137,4 +137,9 @@ def shoot_arrow(map_data, agent_pos, agent_dir):
 def get_cell_content(map_data, agent_pos):
     row = agent_pos[1] // GRID_SIZE
     col = agent_pos[0] // GRID_SIZE
-    return map_data[row][col]
+    
+    # Check if row and col are within valid grid bounds
+    if 0 <= row < len(map_data) and 0 <= col < len(map_data[0]):
+        return map_data[row][col]
+    else:
+        return ''  # Return an empty string if the agent is out of bounds
