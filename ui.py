@@ -1,29 +1,23 @@
 import pygame
+from agent import *
 
 # Define constants
-GRID_SIZE = 80  # Size of each cell in the grid
 MAP_FILE_PATH = 'map1.txt'
 ASSETS_PATH = './Assets/'
 
-# Define agent directions
-FACING_TO_UP = 0
-FACING_TO_RIGHT = 1
-FACING_TO_DOWN = 2
-FACING_TO_LEFT = 3
-
 def load_images(grid_size, assets_path):
     images = {
-        'a': pygame.image.load(assets_path + "agent.png"),
-        'g': pygame.image.load(assets_path + "gold.png"),
-        'b': pygame.image.load(assets_path + "breeze.png"),
-        'p': pygame.image.load(assets_path + "pit.png"),
-        's': pygame.image.load(assets_path + "stench.png"),
-        'w': pygame.image.load(assets_path + "wumpus.png"),
-        'm': pygame.image.load(assets_path + "poison.png"),
-        'h': pygame.image.load(assets_path + "potion.png"),
-        'q': pygame.image.load(assets_path + "whiff.png"),
-        'l': pygame.image.load(assets_path + "glow.png"),
-        'e': pygame.image.load(assets_path + "exit.png"),
+        'A': pygame.image.load(assets_path + "agent.png"),
+        'G': pygame.image.load(assets_path + "gold.png"),
+        'B': pygame.image.load(assets_path + "breeze.png"),
+        'P': pygame.image.load(assets_path + "pit.png"),
+        'S': pygame.image.load(assets_path + "stench.png"),
+        'W': pygame.image.load(assets_path + "wumpus.png"),
+        'P_G': pygame.image.load(assets_path + "poison.png"),
+        'H_P': pygame.image.load(assets_path + "potion.png"),
+        'W_H': pygame.image.load(assets_path + "whiff.png"),
+        'G_L': pygame.image.load(assets_path + "glow.png"),
+        'E': pygame.image.load(assets_path + "exit.png"),
         '-': pygame.image.load(assets_path + "empty.png"),
     }
 
@@ -33,14 +27,21 @@ def load_images(grid_size, assets_path):
     
     return images
 
-def load_map(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        map_data = [line.strip().split('.') for line in lines]
-    return map_data
+# def load_map(file_path):
+#     with open(file_path, 'r') as file:
+#         n = int(file.readline().strip()) # Read the size
+#         map_data = [line.strip().split('.') for line in file]
+#     return map_data
 
 def count_golds(map_data):
-    return sum(cell.count('g') for row in map_data for cell in row)
+    gold_count = 0
+    for row in map_data:
+        for cell in row:
+            percepts = cell.split(',')
+            if 'G' in percepts and 'P_G' not in percepts and 'G_L' not in percepts:
+                gold_count += 1
+    return gold_count
+
 
 def display_map(screen, map_data, images, grid_size, agent_pos, agent_dir):
     num_rows = len(map_data)
@@ -51,13 +52,15 @@ def display_map(screen, map_data, images, grid_size, agent_pos, agent_dir):
             x = col_idx * grid_size
             y = row_idx * grid_size
 
-            # Draw images for each cell
-            for char in cell:
-                screen.blit(images[char], (x, y))
+            # Split the cell by comma and draw each image
+            percepts = cell.split(',')
+            for percept in percepts:
+                if percept in images:
+                    screen.blit(images[percept], (x, y))
     
     # Draw the agent at its current position and direction
     agent_x, agent_y = agent_pos
-    agent_image = images['a']
+    agent_image = images['A']
 
     # Rotate agent image based on direction
     if agent_dir == FACING_TO_UP:
