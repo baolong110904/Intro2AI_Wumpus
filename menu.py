@@ -101,3 +101,5 @@ def main_menu():
         screen.blit(robot_image2, (WIDTH - robot_image2.get_width(), HEIGHT - robot_image2.get_height() - 70))  # Right image
 
         pygame.display.flip()
+if __name__ == "__main__":
+    action = main_menu()
