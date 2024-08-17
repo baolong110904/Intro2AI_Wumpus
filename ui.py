@@ -129,7 +129,7 @@ def display_lose_screen(screen, message):
                 return False
     return True
 
-def display_hud(screen, score, arrows, remaining_golds, health, healing_potions):
+def display_hud(screen, score, remaining_golds, health, healing_potions):
     # Set up the font
     font = pygame.font.Font(None, 36)
     
@@ -141,14 +141,12 @@ def display_hud(screen, score, arrows, remaining_golds, health, healing_potions)
     
     # Render the text
     score_text = font.render(f"Score: {score}", True, (0, 0, 0))
-    arrow_text = font.render(f"Arrow: {arrows}", True, (0, 0, 0))
     gold_text = font.render(f"Remaining Golds: {remaining_golds}", True, (0, 0, 0))
     health_text = font.render(f"Health: {health}%", True, (0, 0, 0))
     potion_text = font.render(f"Potions: {healing_potions}", True, (0, 0, 0))
     
     # Position the text on the HUD surface
     hud_surface.blit(score_text, (10, 10))
-    hud_surface.blit(arrow_text, (10, 50))
     hud_surface.blit(gold_text, (10, 90))
     hud_surface.blit(health_text, (10, 130))
     hud_surface.blit(potion_text, (10, 170))

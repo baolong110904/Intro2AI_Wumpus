@@ -3,7 +3,10 @@ class Program:
         self.map_size = 0
         self.map = []
         self.read_map(filename)
-
+    
+    def get_map_size(self):
+        return self.map_size
+    
     def read_map(self, filename):
         with open(filename, 'r') as file:
             self.map_size = int(file.readline().strip())

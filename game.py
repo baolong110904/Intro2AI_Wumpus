@@ -42,7 +42,7 @@ def run_game():
             display_map(screen, map, images, grid_size, agent.position, agent.direction)
 
             # Display HUD
-            display_hud(screen, agent.score, agent.arrows, remaining_golds, agent.health, agent.healing_potions)
+            display_hud(screen, agent.score, remaining_golds, agent.health, agent.healing_potions)
 
             pygame.display.flip()
 
