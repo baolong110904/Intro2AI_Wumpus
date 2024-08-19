@@ -47,36 +47,50 @@ class Program:
       info[temp_info.index('!' + item)] = item
     return info
   
-  def verify_action(self, action: tuple[str, tuple[int, int], int]):
-    action_type, agent_pos, agent_hp = action
-    cell_info = self.map[agent_pos[0]][agent_pos[1]]
-
-    if action_type == 'MOVE':
+  def verify_action(self, action: str):
+    if 'MOVE' in action:
+      # Action like MOVE_{row}_{col}_{hp}
+      _, row, col, hp = action.split('_')
+      cell_info = self.map[int(row)][int(col)]
       if 'P' in cell_info or 'W' in cell_info:
         self.point -= 10000
-        return 'GAME_OVER'
+        return 'AGENT_DIED'
       if 'P_G' in cell_info:
-        if agent_hp - 25 <= 0:
+        if int(hp) - 25 <= 0:
           self.point -= 10000
-          return 'GAME_OVER'
-        else: return 'PG_ENTERED'
+          return 'AGENT_DIED'
+        else: return 'PG_POISONED'
       self.point -= 10
-    elif action_type == 'GRAB':
+    elif 'GRAB' in action:
+      # Action like GRAB_{row}_{col}
+      _, row, col = action.split('_')
+      cell_info = self.map[int(row)][int(col)]
       if 'G' in cell_info:
-        cell_info.pop(cell_info.index('G'))
+        self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('G'))
         self.point += 5000
-        return 'G_GRABED'
+        return 'G_EXIST'
       if 'H_P' in cell_info:
-        cell_info.pop(cell_info.index('H_P'))
-        return 'HP_GRABED'
+        self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('H_P'))
+        return 'HP_EXIST'
       self.point -= 10
-    elif action_type == 'SHOOT':
+    elif 'SHOOT' in action:
+      # Action like GRAB_{row}_{col}
+      _, row, col = action.split('_')
+      cell_info = self.map[int(row)][int(col)]
       self.point -= 100
-      # Shoot
-    elif action_type == 'CLIMB':
-      if agent_pos == (0, 0):
+      if 'W' in cell_info:
+        self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('W'))
+        for pos in get_adj_pos((int(row), int(col)), self.map_size):
+          self.map[pos[0]][pos[1]].pop(self.map[pos[0]][pos[1]].index('S'))
+        return f'W{row}{col}_SCREAMED'
+      else:
+        return f'A{row}{col}_FELL'
+    elif 'CLIMB' in action:
+      # Action like CLIMB_{row}_{col}
+      _, row, col = action.split('_')
+      if row == '0' and col == '0':
         self.point += 10
-        return 'GAME_OVER'
+        return 'AGENT_CLIMBED'
       self.point -= 10
     else:
       self.point -= 10

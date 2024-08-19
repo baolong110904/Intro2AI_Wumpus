@@ -36,7 +36,9 @@ def tt_entail(kb: set[str], alpha: str, pos: tuple[int, int]):
   # Only take Q in P -> Q clauses if P true
   shorten_kb = set()
   for clause in temp_kb:
-    if clause.split('->')[0] in kb:
+    if '->' not in clause:
+      shorten_kb.add(clause)
+    elif clause.split('->')[0] in kb:
       shorten_kb.add(clause.split('->')[1])
   # Only take involved clause in & series
   temp_kb = set(shorten_kb)
@@ -85,10 +87,10 @@ def find_path(
   current_cell: tuple[int, int],
   explored_cells: set[tuple[int, int]],
   safe_cells: set[tuple[int, int]],
-  poison_cells: set[tuple[int, int]],
+  check,
   map_size: int,
-  return_flag: bool
 ):
+  if check(current_cell): return [current_cell]
   frontier, cost, expanded, moves = [current_cell], [0], [], []
   # Loop
   while frontier:
@@ -98,7 +100,7 @@ def find_path(
     cost.remove(min_cost)
     expanded.append(cell)
     # Check is goal
-    if (return_flag and cell == (0, 0)) or (not return_flag and cell not in explored_cells):
+    if check(cell):
       moves = moves[:len(moves) - [m[1] for m in moves][::-1].index(cell)]
       moves.reverse()
       path = [*moves[0]]

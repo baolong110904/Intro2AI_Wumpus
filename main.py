@@ -2,7 +2,7 @@ from program import Program
 from agent import Agent
 
 if __name__ == '__main__':
-  program = Program('map1.txt')
+  program = Program('map2.txt')
   agent = Agent()
 
   map_size = program.map_size
@@ -13,14 +13,18 @@ if __name__ == '__main__':
     action = agent.act(info, map_size)
 
     # Handle UI base on this info
-    if action: print(action[0])
+    if action: print(action)
     
     if action:
-      # Handle UI base on this info
       response_info = program.verify_action(action)
+
+      # Handle UI base on this info
       if response_info: print(response_info)
 
-      if response_info == 'GAME_OVER': break
-      else: agent.verify_info(response_info)
+      if response_info == 'AGENT_CLIMBED' or response_info == 'AGENT_DIED' : break
+      else: agent.react(response_info, map_size)
+
+    # i += 1
+    # if i == 1: break
 
   print(f'POINT {program.point}')
