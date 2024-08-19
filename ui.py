@@ -36,7 +36,7 @@ GRAY = (200, 200, 200)
 card_images = [pygame.image.load(f"./Assets/{img}").convert_alpha() for img in [
     "breeze.png", "bush.png", "empty.png", "gold.png", "pit.png",
     "potion.png", "glow.png", "poison.png", "whiff.png", "stench.png",
-    "wumpus.png", "exit.png", "agent.png"
+    "wumpus.png", "exit.png", "agent.png", "arrow.png"
 ]]
 card_images = [pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE)) for img in card_images]
 
@@ -62,7 +62,7 @@ class GameUI:
                 x, y = col * self.cell_size, row * self.cell_size
                 
                 if (row, col) not in self.explored_cells:
-                    screen.blit(card_images[CARD.BUSH.value], (x, y))
+                    screen.blit(card_images[CARD.BUSH.value], (x, y))                            
                 else:
                     # Draw empty cell as base
                     screen.blit(card_images[CARD.EMPTY.value], (x, y))
