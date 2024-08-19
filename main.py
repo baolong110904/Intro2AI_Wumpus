@@ -2,7 +2,7 @@ from program import Program
 from agent import Agent
 
 if __name__ == '__main__':
-  program = Program('map3.txt')
+  program = Program('map2.txt')
   agent = Agent()
 
   map_size = program.map_size

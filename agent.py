@@ -106,7 +106,7 @@ class Agent:
       flag = 'SHOOT'
       check_cell_to_move = lambda cell: f'S{cell[0]}{cell[1]}' in self.kb
       path = find_path(self.pos, self.explored_cells, self.safe_cells, self.poison_cells, check_cell_to_move, map_size)
-    elif self.poison_stack * 25 + 25 < self.hp + self.heal * 25:
+    elif self.poison_stack * 25 + 25 < self.hp + self.heal * 25 and self.poison_cells.difference(self.explored_cells):
       check_cell_to_move = lambda cell: cell in self.poison_cells.difference(self.explored_cells)
       path = find_path(self.pos, self.explored_cells, {*self.safe_cells, *self.poison_cells}, self.poison_cells, check_cell_to_move, map_size)
     else:

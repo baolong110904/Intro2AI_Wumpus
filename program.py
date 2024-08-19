@@ -71,6 +71,8 @@ class Program:
         return 'G_EXIST'
       if 'H_P' in cell_info:
         self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('H_P'))
+        for pos in get_adj_pos((int(row), int(col)), self.map_size):
+          self.map[pos[0]][pos[1]].pop(self.map[pos[0]][pos[1]].index('G_L'))
         return 'HP_EXIST'
       self.point -= 10
     elif 'SHOOT' in action:
