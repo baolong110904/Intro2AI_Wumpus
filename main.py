@@ -2,11 +2,10 @@ from program import Program
 from agent import Agent
 
 if __name__ == '__main__':
-  program = Program('map2.txt')
+  program = Program('map3.txt')
   agent = Agent()
 
   map_size = program.map_size
-  i = 0
 
   while True:
     info = program.report_cell(agent.pos)
@@ -23,8 +22,5 @@ if __name__ == '__main__':
 
       if response_info == 'AGENT_CLIMBED' or response_info == 'AGENT_DIED' : break
       else: agent.react(response_info, map_size)
-
-    # i += 1
-    # if i == 1: break
 
   print(f'POINT {program.point}')

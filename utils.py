@@ -87,6 +87,7 @@ def find_path(
   current_cell: tuple[int, int],
   explored_cells: set[tuple[int, int]],
   safe_cells: set[tuple[int, int]],
+  poison_cells: set[tuple[int, int]],
   check,
   map_size: int,
 ):
@@ -112,6 +113,7 @@ def find_path(
     adj_pos = [pos for pos in get_adj_pos(cell, map_size) if pos in {*explored_cells, *safe_cells} and pos not in expanded]
     for pos in adj_pos:
       pos_cost = min_cost + 1
+      if pos in poison_cells: pos_cost += 1000
       if pos not in frontier:
         frontier.append(pos)
         cost.append(pos_cost)

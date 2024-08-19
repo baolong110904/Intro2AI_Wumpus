@@ -8,6 +8,7 @@ class Agent:
     self.dir = 0
     self.hp = 100
     self.heal = 0
+    self.poison_stack = 0
     # Knowledge
     self.kb = set()
     self.explored_cells = {(0, 0)}
@@ -19,7 +20,9 @@ class Agent:
   def act(self, info: list[str], map_size: int):
     if self.intention:
       # If there is pending action, do it
-      action = self.intention.pop(0)
+      action = None
+      if (self.hp == 25 and self.heal > 0): action = 'HEAL' # Emergency case
+      else: action = self.intention.pop(0)
       if action == 'MOVE':
         offset = move_map[self.dir]
         self.pos = (self.pos[0] + offset[0], self.pos[1] + offset[1])
@@ -52,9 +55,11 @@ class Agent:
     if response == 'G_EXIST':
       self.kb.difference_update({f'G{self.pos[0]}{self.pos[1]}'})
     elif response == 'HP_EXIST':
+      self.kb.difference_update({f'H_P{self.pos[0]}{self.pos[1]}'})
       self.heal += 1
     elif response == 'PG_POISONED':
       self.hp -= 25 
+      self.poison_stack += 1
     elif response and 'SCREAMED' in response:
       # Response like W{row}{col}_SCREAMED
       shoot_pos = (int(response[1]), int(response[2]))
@@ -81,7 +86,7 @@ class Agent:
 
   def think(self, map_size):
     # Grab when possible
-    if f'G{self.pos[0]}{self.pos[1]}' in self.kb or f'H_{self.pos[0]}{self.pos[1]}' in self.kb:
+    if f'G{self.pos[0]}{self.pos[1]}' in self.kb or f'H_P{self.pos[0]}{self.pos[1]}' in self.kb:
       self.intention.append('GRAB')
 
     # Infer safe cells from knowledge base
@@ -93,18 +98,21 @@ class Agent:
         self.poison_cells.add(pos)
 
     # Find path to a cell
-    flag = 'SAFE'
-    check_cell_to_move = None
+    flag, path = None, None
     if self.safe_cells.difference(self.explored_cells):
       check_cell_to_move = lambda cell: cell not in self.explored_cells
+      path = find_path(self.pos, self.explored_cells, self.safe_cells, self.poison_cells, check_cell_to_move, map_size)
     elif [clause for clause in self.kb if clause[0] == 'S']:
       flag = 'SHOOT'
       check_cell_to_move = lambda cell: f'S{cell[0]}{cell[1]}' in self.kb
+      path = find_path(self.pos, self.explored_cells, self.safe_cells, self.poison_cells, check_cell_to_move, map_size)
+    elif self.poison_stack * 25 + 25 < self.hp + self.heal * 25:
+      check_cell_to_move = lambda cell: cell in self.poison_cells.difference(self.explored_cells)
+      path = find_path(self.pos, self.explored_cells, {*self.safe_cells, *self.poison_cells}, self.poison_cells, check_cell_to_move, map_size)
     else:
       flag = 'RETURN'
       check_cell_to_move = lambda cell: cell == (0, 0)
-
-    path = find_path(self.pos, self.explored_cells, self.safe_cells, check_cell_to_move, map_size)
+      path = find_path(self.pos, self.explored_cells, self.safe_cells, self.poison_cells, check_cell_to_move, map_size)
 
     # Make intention of moving to this cell
     temp_pos, temp_dir = self.pos, self.dir
