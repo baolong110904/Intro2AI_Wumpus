@@ -1,16 +1,12 @@
-# main.py
+import pygame
 from program import Program
 from agent import Agent
 from ui import GameUI
-from menu import *
-import pygame
+from menu import main_menu, tutorial_screen  # Make sure these functions are correctly defined in menu.py
 import sys
 
-def count_remaining_gold(program):
-    return sum('G' in cell for row in program.map for cell in row)
-
-def run_game(fileName):
-    program = Program(fileName)
+def run_game(map_file):
+    program = Program(map_file)
     agent = Agent()
     map_size = program.map_size
 
@@ -18,11 +14,9 @@ def run_game(fileName):
     ui = GameUI(map_size)
     clock = pygame.time.Clock()
 
-    remaining_gold = count_remaining_gold(program)
-
     while True:
         ui.handle_events()
-        
+
         info = program.report_cell(agent.pos)
         action = agent.act(info, map_size)
 
@@ -36,109 +30,78 @@ def run_game(fileName):
             if response_info == 'AGENT_CLIMBED' or response_info == 'AGENT_DIED':
                 ui.show_game_over(program.point)
                 break
-            elif response_info == 'G_EXIST':
-                remaining_gold -= 1
-            
+
             agent.react(response_info, map_size)
-             # Update explored cells after the agent moves
             ui.update_explored_cells(agent.pos)
 
         # Update the UI
-        ui.draw(program, agent, remaining_gold)
+        ui.draw(program, agent)
         clock.tick(5)  # Limit to 5 FPS for better visualization
 
     print(f'POINT {program.point}')
 
-# Main game loop
-def main_menu():
-    red_shift = 0
-    green_shift = 85
-    blue_shift = 170
-    direction = 1
-    playing = False
-    map_preview = False
-    while True:
+def map_selection_screen():
+    WIDTH, HEIGHT = 800, 600
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Select Map")
+
+    # Colors and fonts
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    font = pygame.font.Font(None, 36)
+
+    # Load map images
+    map_images = [pygame.image.load(f"./Assets/map{i}.png").convert() for i in range(1, 6)]
+    map_images = [pygame.transform.scale(img, (WIDTH, HEIGHT)) for img in map_images]
+
+    current_map_index = 0
+    running = True
+    while running:
+        screen.fill(WHITE)
+        screen.blit(map_images[current_map_index], (0, 0))
+        prev_button = font.render("Previous", True, BLACK)
+        next_button = font.render("Next", True, BLACK)
+        start_button = font.render("Return", True, BLACK)
+
+        screen.blit(prev_button, (50, HEIGHT - 50))
+        screen.blit(next_button, (WIDTH - 150, HEIGHT - 50))
+        screen.blit(start_button, (WIDTH // 2 - 100, HEIGHT - 50))
+
+        pygame.display.flip()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if playing:
-                    for button in levels:
-                        if button.is_clicked(event.pos):
-                            if button.text == "MAP 1":
-                                return run_game("map1.txt")
-                            elif button.text == "MAP 2":
-                                return run_game("map2.txt")
-                            elif button.text == "MAP 3":
-                                return run_game("map3.txt")
-                            elif button.text == "MAP 4":
-                                return run_game("map4.txt")
-                            elif button.text == "MAP 5":
-                                return run_game("map5.txt")
-                # elif map_preview:
-                #     for button in maps:
-                #         if button.is_clicked(event.pos):
-                            # if button.text == "MAP 1":
-                            #     preview_map("map1.txt")
-                            # elif button.text == "MAP 2":
-                            #     preview_map("map2.txt")
-                            # elif button.text == "MAP 3":
-                            #     preview_map("map3.txt")
-                            # elif button.text == "MAP 4":
-                            #     preview_map("map4.txt")
-                            # elif button.text == "MAP 5":
-                            #     preview_map("map5.txt")
-                else:
-                    for button in buttons:
-                        if button.is_clicked(event.pos):
-                            if button.text == "EXIT":
-                                pygame.quit()
-                                sys.exit()
-                            elif button.text == "START":
-                                playing = True  # Switch to level selection mode
-                            elif button.text == "MAP":
-                                map_preview = True
-                            elif button.text == "TUTORIAL":
-                                return "tutorial"
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                if 50 < x < 150 and HEIGHT - 50 < y < HEIGHT - 10:
+                    current_map_index = (current_map_index - 1) % 5
+                elif WIDTH - 150 < x < WIDTH - 50 and HEIGHT - 50 < y < HEIGHT - 10:
+                    current_map_index = (current_map_index + 1) % 5
+                elif WIDTH // 2 - 100 < x < WIDTH // 2 + 100 and HEIGHT - 50 < y < HEIGHT - 10:
+                    return current_map_index  # Return the selected map index
 
-        # Draw background
-        screen.fill(MINT_GREEN)
 
-        # Draw title
-        title_color = (
-            abs((red_shift) % 255),
-            abs((green_shift) % 255),
-            abs((blue_shift) % 255)
-        )
-        title = titlefont.render("Wumpus World", True, title_color)
-        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 50))
-
-        # Update color shift
-        red_shift += 0.5 * direction
-        green_shift += 0.5 * direction
-        blue_shift += 0.5 * direction
-
-        if red_shift >= 255 or red_shift <= 0:
-            direction *= -1
-
-        # Draw buttons
-        if playing:
-            for button in levels:
-                button.draw()
-        elif map_preview:
-            for button in maps:
-                button.draw()
-        else:
-            for button in buttons:
-                button.draw()
-
-        # Draw robot characters
-        screen.blit(robot_image, (20, HEIGHT - robot_image.get_height() - 80))  # Left image
-        screen.blit(robot_image2, (WIDTH - robot_image2.get_width(), HEIGHT - robot_image2.get_height() - 70))  # Right image
-
-        pygame.display.flip()
-        
-if __name__ == '__main__':
+def main():
     pygame.init()
-    action = main_menu()
+    selected_map_index = None  # Store the selected map index
+
+    while True:
+        action = main_menu()
+        if action == "start_game":
+            if selected_map_index is None:
+                # Prompt user to select a map if not selected yet
+                selected_map_index = map_selection_screen()  # Get the map index
+            map_file = f"map{selected_map_index + 1}.txt"  # Map file based on index
+            run_game(map_file)
+        elif action == "choose_map":
+            selected_map_index = map_selection_screen()  # Get the map index
+        elif action == "tutorial":
+            tutorial_screen()
+        elif action == "quit":
+            pygame.quit()
+            sys.exit()
+
+if __name__ == '__main__':
+    main()

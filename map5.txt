@@ -1,0 +1,11 @@
+10
+-.W.H_P.H_P.H_P.W.W.W.W.W
+H_P.G,P_G.H_P.W.W.W.W.W.W.W
+W.H_P.G,P_G.H_P.W.W.W.W.W.W.W
+W.W.H_P.G,P_G.H_P.W.W.W.W.W
+W.W.W.H_P.G,P_G.H_P.W.W.W.W
+W.W.W.W.H_P.G,P_G.H_P.W.W.W
+W.W.W.W.W.H_P.G,P_G.H_P.W.W
+W.W.W.W.W.W.H_P.G,P_G.H_P.W
+W.W.W.W.W.W.W.H_P.G,P_G.H_P
+W.W.W.W.W.W.W.W.W.H_P.H_P
