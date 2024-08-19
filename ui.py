@@ -1,155 +1,132 @@
+# ui.py
 import pygame
-from agent import *
+import sys
+from enum import Enum
 
-# Define constants
-MAP_FILE_PATH = 'map1.txt'
-ASSETS_PATH = './Assets/'
+class CARD(Enum):
+    BREEZE = 0
+    BUSH = 1
+    EMPTY = 2
+    GOLD = 3
+    PIT = 4
+    HEALING_POTION = 5
+    GLOW = 6
+    POISONOUS_GAS = 7
+    WHIFF = 8
+    STENCH = 9
+    WUMPUS = 10
+    START = 11
+    AGENT = 12
 
-def load_images(grid_size, assets_path):
-    images = {
-        'A': pygame.image.load(assets_path + "agent.png"),
-        'G': pygame.image.load(assets_path + "gold.png"),
-        'B': pygame.image.load(assets_path + "breeze.png"),
-        'P': pygame.image.load(assets_path + "pit.png"),
-        'S': pygame.image.load(assets_path + "stench.png"),
-        'W': pygame.image.load(assets_path + "wumpus.png"),
-        'P_G': pygame.image.load(assets_path + "poison.png"),
-        'H_P': pygame.image.load(assets_path + "potion.png"),
-        'W_H': pygame.image.load(assets_path + "whiff.png"),
-        'G_L': pygame.image.load(assets_path + "glow.png"),
-        'E': pygame.image.load(assets_path + "exit.png"),
-        '-': pygame.image.load(assets_path + "empty.png"),
-    }
+pygame.init()
 
-    # Resize images to fit the grid size
-    for key in images:
-        images[key] = pygame.transform.scale(images[key], (grid_size, grid_size))
-    
-    return images
+WIDTH, HEIGHT = 1100, 600
+GRID_SIZE = 600
+CELL_SIZE = GRID_SIZE // 10  # Assuming a 10x10 grid
 
-# def load_map(file_path):
-#     with open(file_path, 'r') as file:
-#         n = int(file.readline().strip()) # Read the size
-#         map_data = [line.strip().split('.') for line in file]
-#     return map_data
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Wumpus World")
 
-def count_golds(map_data):
-    gold_count = 0
-    for row in map_data:
-        for cell in row:
-            percepts = cell.split(',')
-            if 'G' in percepts and 'P_G' not in percepts and 'G_L' not in percepts:
-                gold_count += 1
-    return gold_count
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (200, 200, 200)
 
+# Load images
+card_images = [pygame.image.load(f"./Assets/{img}").convert_alpha() for img in [
+    "breeze.png", "bush.png", "empty.png", "gold.png", "pit.png",
+    "potion.png", "glow.png", "poison.png", "whiff.png", "stench.png",
+    "wumpus.png", "exit.png", "agent.png"
+]]
+card_images = [pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE)) for img in card_images]
 
-def display_map(screen, map_data, images, grid_size, agent_pos, agent_dir):
-    num_rows = len(map_data)
-    num_cols = len(map_data[0])
+# Load and rotate agent images
+agent_images = [pygame.transform.rotate(card_images[CARD.AGENT.value], angle) for angle in [270, 180, 90, 0]]
 
-    for row_idx, row in enumerate(map_data):
-        for col_idx, cell in enumerate(row):
-            x = col_idx * grid_size
-            y = row_idx * grid_size
+font = pygame.font.Font(None, 36)
 
-            # Split the cell by comma and draw each image
-            percepts = cell.split(',')
-            for percept in percepts:
-                if percept in images:
-                    screen.blit(images[percept], (x, y))
-    
-    # Draw the agent at its current position and direction
-    agent_x, agent_y = agent_pos
-    agent_image = images['A']
+class GameUI:
+    def __init__(self, map_size):
+        self.map_size = map_size
+        self.cell_size = GRID_SIZE // map_size
+        self.explored_cells = set()
+        self.removed_items = set()
 
-    # Rotate agent image based on direction
-    if agent_dir == FACING_TO_UP:
-        agent_image = pygame.transform.rotate(agent_image, 0)
-    elif agent_dir == FACING_TO_DOWN:
-        agent_image = pygame.transform.rotate(agent_image, 180)
-    elif agent_dir == FACING_TO_RIGHT:
-        agent_image = pygame.transform.rotate(agent_image, 270)
-    elif agent_dir == FACING_TO_LEFT:
-        agent_image = pygame.transform.rotate(agent_image, 90)
+    def draw(self, program, agent, remaining_gold):
+        screen.fill(WHITE)
+        
+        # Draw grid
+        for row in range(self.map_size):
+            for col in range(self.map_size):
+                cell_info = program.map[row][col]
+                x, y = col * self.cell_size, row * self.cell_size
+                
+                if (row, col) not in self.explored_cells:
+                    screen.blit(card_images[CARD.BUSH.value], (x, y))
+                else:
+                    # Draw empty cell as base
+                    screen.blit(card_images[CARD.EMPTY.value], (x, y))
+                    
+                    if (row, col) == agent.pos:
+                        screen.blit(agent_images[agent.dir], (x, y))
+                    elif 'W' in cell_info:
+                        screen.blit(card_images[CARD.WUMPUS.value], (x, y))
+                    elif 'P' in cell_info:
+                        screen.blit(card_images[CARD.PIT.value], (x, y))
+                    elif 'G' in cell_info and f'G{row}{col}' not in self.removed_items:
+                        screen.blit(card_images[CARD.GOLD.value], (x, y))
+                    elif 'H_P' in cell_info and f'H_P{row}{col}' not in self.removed_items:
+                        screen.blit(card_images[CARD.HEALING_POTION.value], (x, y))
+                    elif 'P_G' in cell_info:
+                        screen.blit(card_images[CARD.POISONOUS_GAS.value], (x, y))
+                    elif 'W_H' in cell_info:
+                        screen.blit(card_images[CARD.WHIFF.value], (x, y))
+                    elif 'G_L' in cell_info:
+                        screen.blit(card_images[CARD.GLOW.value], (x, y))
+                    elif 'S' in cell_info and f'S{row}{col}' not in self.removed_items:
+                        screen.blit(card_images[CARD.STENCH.value], (x, y))
+                    elif 'B' in cell_info:
+                        screen.blit(card_images[CARD.BREEZE.value], (x, y))
 
-    # Draw the agent image in its new orientation
-    screen.blit(agent_image, (agent_x, agent_y))
+        # Draw board
+        pygame.draw.rect(screen, GRAY, (GRID_SIZE, 0, WIDTH - GRID_SIZE, HEIGHT))
+        
+        # Display points
+        point_text = font.render(f"Points: {program.point}", True, BLACK)
+        screen.blit(point_text, (GRID_SIZE + 20, 20))
 
-def display_win_screen(screen):
-    # Fill the screen with a background color
-    screen.fill((0, 0, 0))  # Black background
+        # Display remaining gold
+        gold_text = font.render(f"Remaining Gold: {remaining_gold}", True, BLACK)
+        screen.blit(gold_text, (GRID_SIZE + 20, 60))
 
-    font = pygame.font.Font(None, 74)
-    text = font.render('You Win!', True, (0, 255, 0))
-    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
-    screen.blit(text, text_rect)
+        # Display health
+        health_percentage = (agent.hp / 100) * 100  # Assuming max HP is 100
+        health_text = font.render(f"Health: {health_percentage:.0f}%", True, BLACK)
+        screen.blit(health_text, (GRID_SIZE + 20, 100))
 
-    # Add instructions to exit
-    font_small = pygame.font.Font(None, 36)
-    exit_text = font_small.render('Press ESC to exit', True, (255, 255, 255))
-    exit_rect = exit_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 + 100))
-    screen.blit(exit_text, exit_rect)
+        pygame.display.flip()
 
-    pygame.display.flip()
-
-    # Wait for the user to exit
-    waiting = True
-    while waiting:
+    def update_explored_cells(self, pos):
+        self.explored_cells.add(pos)
+        
+    def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return False
-    return True
+                pygame.quit()
+                sys.exit()
 
-def display_lose_screen(screen, message):
-    # Fill the screen with a background color
-    screen.fill((0, 0, 0))  # Black background
+    def show_game_over(self, point):
+        screen.fill(WHITE)
+        font = pygame.font.Font(None, 48)
+        game_over_text = font.render("Game Over", True, BLACK)
+        score_text = font.render(f"Final Score: {point}", True, BLACK)
+        screen.blit(game_over_text, (WIDTH//2 - 100, HEIGHT//2 - 50))
+        screen.blit(score_text, (WIDTH//2 - 100, HEIGHT//2 + 50))
+        pygame.display.flip()
+        pygame.time.wait(3000)  # Wait for 3 seconds
 
-    font = pygame.font.Font(None, 74)
-    text = font.render(message, True, (255, 0, 0))
-    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
-    screen.blit(text, text_rect)
+    def update_explored_cells(self, pos):
+        self.explored_cells.add(pos)
 
-    # Add instructions to exit
-    font_small = pygame.font.Font(None, 36)
-    exit_text = font_small.render('Press ESC to exit', True, (255, 255, 255))
-    exit_rect = exit_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 + 100))
-    screen.blit(exit_text, exit_rect)
-
-    pygame.display.flip()
-
-    # Wait for the user to exit
-    waiting = True
-    while waiting:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return False
-    return True
-
-def display_hud(screen, score, remaining_golds, health, healing_potions):
-    # Set up the font
-    font = pygame.font.Font(None, 36)
-    
-    # Create a surface for the HUD
-    hud_width = 250
-    hud_height = screen.get_height()
-    hud_surface = pygame.Surface((hud_width, hud_height))
-    hud_surface.fill((220, 220, 220))  # Light gray background
-    
-    # Render the text
-    score_text = font.render(f"Score: {score}", True, (0, 0, 0))
-    gold_text = font.render(f"Remaining Golds: {remaining_golds}", True, (0, 0, 0))
-    health_text = font.render(f"Health: {health}%", True, (0, 0, 0))
-    potion_text = font.render(f"Potions: {healing_potions}", True, (0, 0, 0))
-    
-    # Position the text on the HUD surface
-    hud_surface.blit(score_text, (10, 10))
-    hud_surface.blit(gold_text, (10, 90))
-    hud_surface.blit(health_text, (10, 130))
-    hud_surface.blit(potion_text, (10, 170))
-    
-    # Draw the HUD on the right side of the screen
-    screen.blit(hud_surface, (screen.get_width() - hud_width, 0))
+    def remove_item(self, item, pos):
+        self.removed_items.add(f"{item}{pos[0]}{pos[1]}")

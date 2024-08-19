@@ -1,90 +1,98 @@
+from utils import *
+
 class Program:
-    def __init__(self, filename):
-        self.map_size = 0
-        self.map = []
-        self.read_map(filename)
-    
-    def get_map_size(self):
-        return self.map_size
-    
-    def read_map(self, filename):
-        with open(filename, 'r') as file:
-            self.map_size = int(file.readline().strip())
-            self.map = [line.strip().split('.') for line in file]
-            
-        self.update_map()
-        self.output(filename)
-
-    def update_map(self):
-        for i in range(self.map_size):
-            for j in range(self.map_size):
-                if 'W' in self.map[i][j]:
-                    self.add_stench(i, j)
-        
-        for i in range(self.map_size):
-            for j in range(self.map_size):
-                if 'P_G' not in self.map[i][j] and ('H_P' not in self.map[i][j]) and 'P' in self.map[i][j]:
-                    self.add_breeze(i, j)
-                    
-        for i in range(self.map_size):
-            for j in range(self.map_size):
-                if 'P_G' in self.map[i][j]:
-                    self.add_whiff(i, j)
-        
-        for i in range(self.map_size):
-            for j in range(self.map_size):
-                if 'H_P' in self.map[i][j]:
-                    self.add_glow(i, j)
-                    
-    def get_map(self):
-        return self.map_size, self.map
-                    
-    def add_stench(self, i, j):
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < self.map_size and 0 <= nj < self.map_size:
-                if 'S' not in self.map[ni][nj]:
-                    if self.map[ni][nj] == '-':
-                        self.map[ni][nj] = 'S'
-                    else:
-                        self.map[ni][nj] += ',S'
-
-    def add_breeze(self, i, j):
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < self.map_size and 0 <= nj < self.map_size:
-                if 'B' not in self.map[ni][nj]:
-                    if self.map[ni][nj] == '-':
-                        self.map[ni][nj] = 'B'
-                    else:
-                        self.map[ni][nj] += ',B'
-
-    def add_whiff(self, i, j):
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < self.map_size and 0 <= nj < self.map_size:
-                if 'W_H' not in self.map[ni][nj]:
-                    if self.map[ni][nj] == '-':
-                        self.map[ni][nj] = 'W_H'
-                    else:
-                        self.map[ni][nj] += ',W_H'
-
-    def add_glow(self, i, j):
-        for di, dj in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ni, nj = i + di, j + dj
-            if 0 <= ni < self.map_size and 0 <= nj < self.map_size:
-                if 'G_L' not in self.map[ni][nj]:
-                    if self.map[ni][nj] == '-':
-                        self.map[ni][nj] = 'G_L'
-                    else:
-                        self.map[ni][nj] += ',G_L'
-
-    def output(self, filename):
-        with open('output_' + filename, 'w') as file:
-            for row in self.map:
-                file.write('.'.join(row) + '\n')
-
-
-# Example usage
-if __name__ == "__main__":
-    program = Program('map1.txt')
+  def __init__(self, map_input: str):
+    self.point = 0
+    self.map = []
+    # Initialize map
+    with open(map_input) as file:
+      # Read input
+      self.map_size = int(file.readline())
+      self.map = [line.strip().split('.') for line in file.readlines()]
+      # Fill in object
+      for row in range(self.map_size):
+        for col in range(self.map_size):
+          cell = self.map[row][col]
+          self.map[row][col] = []
+          if 'P_G' in cell:
+            cell = cell.replace('P_G', '')
+            self.map[row][col].append('P_G')
+          if 'H_P' in cell:
+            cell = cell.replace('H_P', '')
+            self.map[row][col].append('H_P')
+          if 'W' in cell:
+            cell = cell.replace('W', '')
+            self.map[row][col].append('W')
+          if 'P' in cell:
+            cell = cell.replace('P', '')
+            self.map[row][col].append('P')
+          if 'G' in cell:
+            cell = cell.replace('G', '')
+            self.map[row][col].append('G')
+      # Fill in percept
+      for row in range(self.map_size):
+        for col in range(self.map_size):
+          adj_pos = get_adj_pos((row, col), self.map_size)
+          for obj in self.map[row][col]:
+            if obj in percept_map.keys():
+              for pos in adj_pos:
+                self.map[pos[0]][pos[1]].append(percept_map[obj])
+      
+  def report_cell(self, pos: tuple[int, int]):
+    # All info init with false value
+    temp_info = ['!' + k for k in percept_map.keys()] + ['!' + v for v in percept_map.values()] + ['!G']
+    info = [*temp_info]
+    # Update to true if exist
+    for item in self.map[pos[0]][pos[1]]:
+      info[temp_info.index('!' + item)] = item
+    return info
+  
+  def verify_action(self, action: str):
+    if 'MOVE' in action:
+      # Action like MOVE_{row}_{col}_{hp}
+      _, row, col, hp = action.split('_')
+      cell_info = self.map[int(row)][int(col)]
+      if 'P' in cell_info or 'W' in cell_info:
+        self.point -= 10000
+        return 'AGENT_DIED'
+      if 'P_G' in cell_info:
+        if int(hp) - 25 <= 0:
+          self.point -= 10000
+          return 'AGENT_DIED'
+        else: return 'PG_POISONED'
+      self.point -= 10
+    elif 'GRAB' in action:
+      # Action like GRAB_{row}_{col}
+      _, row, col = action.split('_')
+      cell_info = self.map[int(row)][int(col)]
+      if 'G' in cell_info:
+        self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('G'))
+        self.point += 5000
+        return 'G_EXIST'
+      if 'H_P' in cell_info:
+        self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('H_P'))
+        for pos in get_adj_pos((int(row), int(col)), self.map_size):
+          self.map[pos[0]][pos[1]].pop(self.map[pos[0]][pos[1]].index('G_L'))
+        return 'HP_EXIST'
+      self.point -= 10
+    elif 'SHOOT' in action:
+      # Action like GRAB_{row}_{col}
+      _, row, col = action.split('_')
+      cell_info = self.map[int(row)][int(col)]
+      self.point -= 100
+      if 'W' in cell_info:
+        self.map[int(row)][int(col)].pop(self.map[int(row)][int(col)].index('W'))
+        for pos in get_adj_pos((int(row), int(col)), self.map_size):
+          self.map[pos[0]][pos[1]].pop(self.map[pos[0]][pos[1]].index('S'))
+        return f'W{row}{col}_SCREAMED'
+      else:
+        return f'A{row}{col}_FELL'
+    elif 'CLIMB' in action:
+      # Action like CLIMB_{row}_{col}
+      _, row, col = action.split('_')
+      if row == '0' and col == '0':
+        self.point += 10
+        return 'AGENT_CLIMBED'
+      self.point -= 10
+    else:
+      self.point -= 10
